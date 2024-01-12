@@ -2323,38 +2323,43 @@ void FlexDRWorker::route() {
       if (!mazeIterInit(i, rerouteNets)) {
         return;
       }
-      for (auto net: rerouteNets) {
-        mazeNetInit(net);
-        bool isRouted = routeNet(net);
-        if (isRouted == false) {
-          // TODO: output maze area
-          cout << "Fatal error: Maze Route cannot find path (" << net->getFrNet()->getName() << ") in " 
-             << "(" << routeBox.left() / 2000.0 << ", " << routeBox.bottom() / 2000.0
-             << ") - (" << routeBox.right() / 2000.0 << ", " << routeBox.top() / 2000.0
-             << "). Connectivity Changed.\n";
-          cout << "#local pin = " << net->getPins().size() << endl;
-          for (auto &pin: net->getPins()) {
-            if (pin->hasFrTerm()) {
-              if (pin->getFrTerm()->typeId() == frcInstTerm) {
-                auto instTerm = static_cast<frInstTerm*>(pin->getFrTerm());
-                cout << "  instTerm " << instTerm->getInst()->getName() << "/" << instTerm->getTerm()->getName() << "\n";
+
+      if (routeNetsExt != NULL) {
+        routeNetsExt(this, (std::vector<void *> *)&rerouteNets);
+      } else {
+        for (auto net: rerouteNets) {
+          mazeNetInit(net);
+          bool isRouted = routeNet(net);
+          if (isRouted == false) {
+            // TODO: output maze area
+            cout << "Fatal error: Maze Route cannot find path (" << net->getFrNet()->getName() << ") in " 
+               << "(" << routeBox.left() / 2000.0 << ", " << routeBox.bottom() / 2000.0
+               << ") - (" << routeBox.right() / 2000.0 << ", " << routeBox.top() / 2000.0
+               << "). Connectivity Changed.\n";
+            cout << "#local pin = " << net->getPins().size() << endl;
+            for (auto &pin: net->getPins()) {
+              if (pin->hasFrTerm()) {
+                if (pin->getFrTerm()->typeId() == frcInstTerm) {
+                  auto instTerm = static_cast<frInstTerm*>(pin->getFrTerm());
+                  cout << "  instTerm " << instTerm->getInst()->getName() << "/" << instTerm->getTerm()->getName() << "\n";
+                } else {
+                  cout << "  term\n";
+                }
               } else {
-                cout << "  term\n";
+                cout << "  boundary pin\n";
+              }
+            }
+            if (OUT_MAZE_FILE == string("")) {
+              if (VERBOSE > 0) {
+                cout <<"Waring: no output maze log specified, skipped writing maze log" <<endl;
               }
             } else {
-              cout << "  boundary pin\n";
+              gridGraph.print();
             }
+            exit(1);
           }
-          if (OUT_MAZE_FILE == string("")) {
-            if (VERBOSE > 0) {
-              cout <<"Waring: no output maze log specified, skipped writing maze log" <<endl;
-            }
-          } else {
-            gridGraph.print();
-          }
-          exit(1);
-        }
-        mazeNetEnd(net);
+          mazeNetEnd(net);
+	}
       }
       // drc worker here
       if (!rerouteNets.empty() && isEnableDRC()) {
@@ -2940,6 +2945,9 @@ void FlexDRWorker::routeNet_prepAreaMap(drNet* net, map<FlexMazeIdx, frCoord> &a
   }
 }
 
+void (*FlexDRWorker::plotGridGraph)(FlexGridGraph *graph) = NULL;
+void (*FlexDRWorker::routeNetsExt)(FlexDRWorker *worker, std::vector<void *> *rerouteNets) = NULL;
+
 bool FlexDRWorker::routeNet(drNet* net) {
   ProfileTask profile("DR:routeNet");
   //bool enableOutput = true;
@@ -2974,6 +2982,10 @@ bool FlexDRWorker::routeNet(drNet* net) {
     mazePinInit();
     auto nextPin = routeNet_getNextDst(ccMazeIdx1, ccMazeIdx2, mazeIdx2unConnPins);
     path.clear();
+
+    if (plotGridGraph!=NULL)
+      plotGridGraph(&gridGraph);
+
     if (gridGraph.search(connComps, nextPin, path, ccMazeIdx1, ccMazeIdx2, centerPt)) {
       routeNet_postAstarUpdate(path, connComps, unConnPins, mazeIdx2unConnPins, isFirstConn);
       routeNet_postAstarWritePath(net, path, realPinAPMazeIdx/*, apSVia*/);

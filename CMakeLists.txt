@@ -168,7 +168,7 @@ set (FLEXROUTE_HEADER
 ############################################################
 # Create a library
 ############################################################
-add_library( flexroutelib
+add_library( flexroutelib SHARED
   ${FLEXROUTE_SRC}
 )
 

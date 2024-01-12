@@ -41,7 +41,7 @@ namespace fr {
       return design.get();
     }
     int main();
-  protected:
+  //protected:
     std::unique_ptr<frDesign> design;
   
     void init();

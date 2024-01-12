@@ -774,7 +774,7 @@ namespace fr {
       wavefront.fit();
     }
 
-  protected:
+  //protected:
     frDesign*     design;
     FlexDRWorker* drWorker;
 

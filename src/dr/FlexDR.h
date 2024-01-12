@@ -68,7 +68,9 @@ namespace fr {
     const std::vector<std::vector<frCoord> >* getVia2TurnMinLen() const {
       return &via2turnMinLen;
     }
-  protected:
+
+    // export for access from python
+  //protected:
     frDesign*          design;
     std::vector<std::vector<std::map<frNet*, std::set<std::pair<frPoint, frLayerNum> >, frBlockObjectComp> > > gcell2BoundaryPin;
 
@@ -269,6 +271,7 @@ namespace fr {
                  apSVia(), fixedObjs(), planarHistoryMarkers(), viaHistoryMarkers(), 
                  historyMarkers(std::vector<std::set<FlexMazeIdx> >(3)),
                  nets(), owner2nets(), owner2pins(), gridGraph(drIn->getDesign(), this), markers(), rq(this), gcWorker(nullptr) /*, drcWorker(drIn->getDesign())*/ {}
+
     // setters
     void setRouteBox(const frBox &boxIn) {
       routeBox.set(boxIn);
@@ -476,8 +479,16 @@ namespace fr {
     int main_mt();
     // others
     int getNumQuickMarkers();
+
+    static void (*plotGridGraph)(FlexGridGraph *graph);
+    static void (*routeNetsExt)(FlexDRWorker *worker, std::vector<void *> *rerouteNets);
+
+    // export for access from python
+    void mazeNetInit(drNet* net);
+    void mazeNetEnd(drNet* net);
+    bool routeNet(drNet* net);
     
-  protected:
+  //protected:
     typedef struct {
       frBlockObject* block;
       int            numReroute;
@@ -708,9 +719,6 @@ namespace fr {
     bool mazeIterInit_searchRepair(int mazeIter, std::vector<drNet*> &rerouteNets);
     void mazeIterInit_drcCost();
 
-    void mazeNetInit(drNet* net);
-    void mazeNetEnd(drNet* net);
-    bool routeNet(drNet* net);
     void routeNet_prep(drNet* net, std::set<drPin*, frBlockObjectComp> &pins, 
                        std::map<FlexMazeIdx, std::set<drPin*, frBlockObjectComp> > &mazeIdx2unConnPins,
                        std::set<FlexMazeIdx> &apMazeIdx, std::set<FlexMazeIdx> &realPinAPMazeIdx);
